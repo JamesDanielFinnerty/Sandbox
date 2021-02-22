@@ -29,6 +29,7 @@ namespace Sandbox.CSharp
             // What way is the wind blowing? 0 = North
             Double trueWindBearing = 270;
             Console.WriteLine("Wind: " + trueWindBearing.ToString());
+            var day1 = new Day(new DateTime(2021,02,23), 270);
 
             Console.WriteLine("------------");
             Console.WriteLine(activity1.GetName() + " Difficulty: " + activity1.PerceivedWindAffect(trueWindBearing));
@@ -326,7 +327,7 @@ namespace Sandbox.CSharp
         public Day(DateTime date, Double wind)
         {
             this._date = date;
-            this._date = date;
+            this._windBearing = wind;
         }
 
         public DateTime GetDate() { return this._date; }
