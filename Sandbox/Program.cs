@@ -323,6 +323,7 @@ namespace Sandbox.CSharp
     {
         DateTime _date;
         Double _windBearing;
+        // testing weird git seetings
 
         public Day(DateTime date, Double wind)
         {
