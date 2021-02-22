@@ -14,15 +14,17 @@ namespace Sandbox.CSharp
 
             // Load GPX file, hardcoded path for now.
             XmlDocument gpxFile = new XmlDocument();
+            gpxFile.Load("C:\\Users\\James\\source\\repos\\Sandbox\\Sandbox\\example1.gpx");
+
             List<LocationPoint> points = GetLocationPointsFromFile(gpxFile);
 
             // how accurate do we want to be? How many segments will we simplify this route into?
-            List<LocationPoint> pointsToUse = GetSimplifiedSegmentPoints(points, 4);
+            List<LocationPoint> pointsToUse = GetSimplifiedSegmentPoints(points, 6);
 
             var segments = new List<ActivitySector>();
 
             // What way is the wind blowing? 0 = North
-            Double windBearing = 180;
+            Double windBearing = 270;
             Console.WriteLine("Wind: " + windBearing.ToString());
 
             for (int i = 0; i < pointsToUse.Count - 1; i++)
@@ -34,6 +36,7 @@ namespace Sandbox.CSharp
                 Console.WriteLine("Bearing: " + newSegment.GetBearing());
                 Console.WriteLine("Differance: " + newSegment.BearingCompare(windBearing).ToString());
                 Console.WriteLine("Wind Perception: " + newSegment.PerceivedHeadwindAngle(windBearing));
+                Console.WriteLine("Effort: " + newSegment.PerceivedEffort(windBearing));
             }
         }
 
@@ -60,7 +63,6 @@ namespace Sandbox.CSharp
 
         private static List<LocationPoint> GetLocationPointsFromFile(XmlDocument gpxFile)
         {
-            gpxFile.Load("C:\\Users\\James\\source\\repos\\Sandbox\\Sandbox\\example1.gpx");
 
             // Grab all the elements where the GPS coords are stored.
             // This might be Garmin specific
@@ -156,6 +158,37 @@ namespace Sandbox.CSharp
             return (result + 180) % 360 - 180;
         }
 
+        public int PerceivedEffort(Double windDirection)
+        {
+            var diff = this.BearingCompare(windDirection);
+            diff = Math.Abs(diff);
+
+            var result = 0;
+
+            if (diff < 15)
+            {
+                result = 1;
+            }
+            else if (diff < 80)
+            {
+                result = 3;
+            }
+            else if (diff < 100)
+            {
+                result = 2;
+            }
+            else if (diff < 165)
+            {
+                result = 7;
+            }
+            else if (diff < 180)
+            {
+                result = 10;
+            }
+
+            return result;
+        }
+
         public String PerceivedHeadwindAngle(Double windDirection)
         {
             var diff = this.BearingCompare(windDirection);
@@ -165,13 +198,13 @@ namespace Sandbox.CSharp
 
             if (diff < 15)
             {
-                result = "Strong Tailwind";
-            }
-            else if (diff < 45)
-            {
                 result = "Tailwind";
             }
-            else if (diff < 135)
+            else if (diff < 80)
+            {
+                result = "Tailwind with Crosswind";
+            }
+            else if (diff < 100)
             {
                 if (positive)
                 {
@@ -181,6 +214,10 @@ namespace Sandbox.CSharp
                 {
                     result = "Crosswind from Left";
                 }
+            }
+            else if (diff < 165)
+            {
+                result = "Headwind with Crosswind";
             }
             else if (diff < 180)
             {
