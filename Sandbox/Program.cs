@@ -13,25 +13,39 @@ namespace Sandbox.CSharp
             //TestFSharpCall();
 
             // Load GPX file, hardcoded path for now.
-            XmlDocument gpxFile = new XmlDocument();
-            gpxFile.Load("C:\\Users\\James\\source\\repos\\Sandbox\\Sandbox\\example1.gpx");
+            XmlDocument gpxFile1 = new XmlDocument();
+            gpxFile1.Load("C:\\Users\\James\\source\\repos\\Sandbox\\Sandbox\\example1.gpx");
+            XmlDocument gpxFile2 = new XmlDocument();
+            gpxFile2.Load("C:\\Users\\James\\source\\repos\\Sandbox\\Sandbox\\example2.gpx");
+            XmlDocument gpxFile3 = new XmlDocument();
+            gpxFile3.Load("C:\\Users\\James\\source\\repos\\Sandbox\\Sandbox\\example3.gpx");
 
-            var simplificationFactor = 6;
+            var simplificationFactor = 100;
 
-            var activity = new Activity(gpxFile, simplificationFactor);
+            var activity1 = new Activity(gpxFile1, simplificationFactor);
+            var activity2 = new Activity(gpxFile2, simplificationFactor);
+            var activity3 = new Activity(gpxFile3, simplificationFactor);
 
             // What way is the wind blowing? 0 = North
             Double trueWindBearing = 270;
             Console.WriteLine("Wind: " + trueWindBearing.ToString());
 
-            foreach(var sector in activity.GetSectors())
-            {
-                Console.WriteLine("------------");
-                Console.WriteLine("User Bearing: " + sector.GetBearing());
-                Console.WriteLine("Apparent Wind: " + sector.BearingCompare(trueWindBearing).ToString());
-                Console.WriteLine("Wind Perception: " + sector.PerceivedHeadwindAngle(trueWindBearing));
-                Console.WriteLine("Effort: " + sector.PerceivedEffort(trueWindBearing));
-            }
+            Console.WriteLine("------------");
+            Console.WriteLine(activity1.GetName() + " Difficulty: " + activity1.PerceivedWindAffect(trueWindBearing));
+            Console.WriteLine(activity2.GetName() + " Difficulty: " + activity2.PerceivedWindAffect(trueWindBearing));
+            Console.WriteLine(activity3.GetName() + " Difficulty: " + activity3.PerceivedWindAffect(trueWindBearing));
+
+
+            //Console.WriteLine("1------------");
+            //foreach (var sector in activity1.GetSectors())
+            //{
+            //    Console.WriteLine("------------");
+            //    Console.WriteLine("User Bearing: " + sector.GetBearing());
+            //    Console.WriteLine("Apparent Wind: " + sector.BearingCompare(trueWindBearing).ToString());
+            //    Console.WriteLine("Wind Perception: " + sector.PerceivedHeadwindAngle(trueWindBearing));
+            //    Console.WriteLine("Effort: " + sector.PerceivedEffort(trueWindBearing));
+            //}
+
         }
 
         
@@ -79,12 +93,15 @@ namespace Sandbox.CSharp
         List<LocationPoint> _simpleLocationPoints;
         List<ActivitySector> _sectors;
         int _simplificationFactor;
+        string _name;
 
         public Activity(XmlDocument gpxFile, int simplificationFactor)
         {
-            _locationPoints = GetLocationPointsFromFile(gpxFile);
-            _simplificationFactor = simplificationFactor;
-            _simpleLocationPoints = GetSimplifiedSegmentPoints();
+            this._name = gpxFile.GetElementsByTagName("name")[0].InnerText;
+
+            this._locationPoints = GetLocationPointsFromFile(gpxFile);
+            this._simplificationFactor = simplificationFactor;
+            this._simpleLocationPoints = GetSimplifiedSegmentPoints();
 
             this._sectors = new List<ActivitySector>();
 
@@ -98,6 +115,25 @@ namespace Sandbox.CSharp
         public List<ActivitySector> GetSectors()
         {
             return _sectors;
+        }
+
+        public string GetName()
+        {
+            return _name;
+        }
+
+        public Double PerceivedWindAffect(Double windBearing)
+        {
+            Double result = 0;
+
+            for(int i = 0; i < _sectors.Count(); i++)
+            {
+                Double score = _sectors[i].PerceivedEffort(windBearing);
+                Double adjustedScore = score * (i+1);
+                result += adjustedScore;
+            }
+
+            return result;
         }
 
         private List<LocationPoint> GetSimplifiedSegmentPoints()
@@ -179,10 +215,21 @@ namespace Sandbox.CSharp
             return this._bearing.ToString();
         }
 
+        private Double myMod(Double x, Double m)
+        {
+            // normal % function doing something weird with negatives
+            return (x % m + m) % m;
+        }
+
         public Double BearingCompare(Double windDirection)
         {
+            // broken into lines as this code keeps being a problem and this aids debugging a little
             var result = this._bearing - windDirection;
-            return (result + 180) % 360 - 180;
+            var q = result + 180;
+            var w = myMod(q, 360);
+            var e = w - 180;
+
+            return e;
         }
 
         public int PerceivedEffort(Double windDirection)
@@ -269,5 +316,20 @@ namespace Sandbox.CSharp
             // convert radians to degrees (as bearing: 0...360)
             return (ToDegrees(radians) + 360) % 360;
         }
+    }
+
+    class Day
+    {
+        DateTime _date;
+        Double _windBearing;
+
+        public Day(DateTime date, Double wind)
+        {
+            this._date = date;
+            this._date = date;
+        }
+
+        public DateTime GetDate() { return this._date; }
+        public Double GetWind() { return this._windBearing; }
     }
 }
