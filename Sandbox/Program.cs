@@ -16,71 +16,27 @@ namespace Sandbox.CSharp
             XmlDocument gpxFile = new XmlDocument();
             gpxFile.Load("C:\\Users\\James\\source\\repos\\Sandbox\\Sandbox\\example1.gpx");
 
-            List<LocationPoint> points = GetLocationPointsFromFile(gpxFile);
+            var simplificationFactor = 6;
 
-            // how accurate do we want to be? How many segments will we simplify this route into?
-            List<LocationPoint> pointsToUse = GetSimplifiedSegmentPoints(points, 6);
-
-            var segments = new List<ActivitySector>();
+            var activity = new Activity(gpxFile, simplificationFactor);
 
             // What way is the wind blowing? 0 = North
-            Double windBearing = 270;
-            Console.WriteLine("Wind: " + windBearing.ToString());
+            Double trueWindBearing = 270;
+            Console.WriteLine("Wind: " + trueWindBearing.ToString());
 
-            for (int i = 0; i < pointsToUse.Count - 1; i++)
+            foreach(var sector in activity.GetSectors())
             {
-                var newSegment = new ActivitySector(pointsToUse[i], pointsToUse[i + 1]);
-                segments.Add(newSegment);
-
                 Console.WriteLine("------------");
-                Console.WriteLine("Bearing: " + newSegment.GetBearing());
-                Console.WriteLine("Differance: " + newSegment.BearingCompare(windBearing).ToString());
-                Console.WriteLine("Wind Perception: " + newSegment.PerceivedHeadwindAngle(windBearing));
-                Console.WriteLine("Effort: " + newSegment.PerceivedEffort(windBearing));
+                Console.WriteLine("User Bearing: " + sector.GetBearing());
+                Console.WriteLine("Apparent Wind: " + sector.BearingCompare(trueWindBearing).ToString());
+                Console.WriteLine("Wind Perception: " + sector.PerceivedHeadwindAngle(trueWindBearing));
+                Console.WriteLine("Effort: " + sector.PerceivedEffort(trueWindBearing));
             }
         }
 
-        private static List<LocationPoint> GetSimplifiedSegmentPoints(List<LocationPoint> points, int desiredDivision)
-        {
-            var pointsToUse = new List<LocationPoint>();
+        
 
-            // first point
-            pointsToUse.Add(points.First());
-
-            // interim pointa
-            for (decimal i = 1; i < desiredDivision; i++)
-            {
-                var fractionalIndex = (i / desiredDivision);
-                var targetIndex = Convert.ToInt32(fractionalIndex * points.Count);
-
-                pointsToUse.Add(points[targetIndex]);
-            }
-
-            // final point
-            pointsToUse.Add(points.Last());
-            return pointsToUse;
-        }
-
-        private static List<LocationPoint> GetLocationPointsFromFile(XmlDocument gpxFile)
-        {
-
-            // Grab all the elements where the GPS coords are stored.
-            // This might be Garmin specific
-            XmlNodeList activityPoints = gpxFile.GetElementsByTagName("trkpt");
-
-
-            var points = new List<LocationPoint>();
-
-            for (int i = 0; i < activityPoints.Count; i++)
-            {
-                var lat = activityPoints[i].Attributes["lat"].Value;
-                var lon = activityPoints[i].Attributes["lon"].Value;
-
-                points.Add(new LocationPoint(lat, lon));
-            }
-
-            return points;
-        }
+        
 
         private static void TestFSharpCall()
         {
@@ -114,6 +70,77 @@ namespace Sandbox.CSharp
         public Double GetLatitude()
         {
             return this._lat;
+        }
+    }
+
+    class Activity
+    {
+        List<LocationPoint> _locationPoints;
+        List<LocationPoint> _simpleLocationPoints;
+        List<ActivitySector> _sectors;
+        int _simplificationFactor;
+
+        public Activity(XmlDocument gpxFile, int simplificationFactor)
+        {
+            _locationPoints = GetLocationPointsFromFile(gpxFile);
+            _simplificationFactor = simplificationFactor;
+            _simpleLocationPoints = GetSimplifiedSegmentPoints();
+
+            this._sectors = new List<ActivitySector>();
+
+            for (int i = 0; i < this._simpleLocationPoints.Count - 1; i++)
+            {
+                var newSegment = new ActivitySector(this._simpleLocationPoints[i], this._simpleLocationPoints[i + 1]);
+                _sectors.Add(newSegment);
+            }
+        }
+
+        public List<ActivitySector> GetSectors()
+        {
+            return _sectors;
+        }
+
+        private List<LocationPoint> GetSimplifiedSegmentPoints()
+        {
+            var pointsToUse = new List<LocationPoint>();
+            var points = this._locationPoints;
+
+            // first point
+            pointsToUse.Add(points.First());
+
+            // interim pointa
+            for (decimal i = 1; i < this._simplificationFactor; i++)
+            {
+                var fractionalIndex = (i / this._simplificationFactor);
+                var targetIndex = Convert.ToInt32(fractionalIndex * points.Count);
+
+                pointsToUse.Add(points[targetIndex]);
+            }
+
+            // final point
+            pointsToUse.Add(points.Last());
+            return pointsToUse;
+        }
+
+        private List<LocationPoint> GetLocationPointsFromFile(XmlDocument gpxFile)
+        {
+
+            // Grab all the elements where the GPS coords are stored.
+            // This might be Garmin specific
+            XmlNodeList activityPoints = gpxFile.GetElementsByTagName("trkpt");
+
+
+            var points = new List<LocationPoint>();
+
+            for (int i = 0; i < activityPoints.Count; i++)
+            {
+                var lat = activityPoints[i].Attributes["lat"].Value;
+                var lon = activityPoints[i].Attributes["lon"].Value;
+
+                points.Add(new LocationPoint(lat, lon));
+            }
+
+            return points;
         }
     }
 
