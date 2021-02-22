@@ -22,30 +22,32 @@ namespace Sandbox.CSharp
 
             var simplificationFactor = 100;
 
-            var activity1 = new Activity(gpxFile1, simplificationFactor);
-            var activity2 = new Activity(gpxFile2, simplificationFactor);
-            var activity3 = new Activity(gpxFile3, simplificationFactor);
+            var routes = new List<Activity>();
+            routes.Add(new Activity(gpxFile1, simplificationFactor));
+            routes.Add(new Activity(gpxFile2, simplificationFactor));
+            routes.Add(new Activity(gpxFile3, simplificationFactor));
 
-            // What way is the wind blowing? 0 = North
-            Double trueWindBearing = 270;
-            Console.WriteLine("Wind: " + trueWindBearing.ToString());
-            var day1 = new Day(new DateTime(2021,02,23), 270);
+            var days = new List<Day>();
+            days.Add(new Day(new DateTime(2021, 02, 23), 270));
+            days.Add(new Day(new DateTime(2021, 02, 24), 90));
+            days.Add(new Day(new DateTime(2021, 02, 25), 120));
+            days.Add(new Day(new DateTime(2021, 02, 26), 320));
 
-            Console.WriteLine("------------");
-            Console.WriteLine(activity1.GetName() + " Difficulty: " + activity1.PerceivedWindAffect(trueWindBearing));
-            Console.WriteLine(activity2.GetName() + " Difficulty: " + activity2.PerceivedWindAffect(trueWindBearing));
-            Console.WriteLine(activity3.GetName() + " Difficulty: " + activity3.PerceivedWindAffect(trueWindBearing));
+            foreach(var day in days)
+            {
+                Activity bestRoute = routes[0];
 
+                foreach(var activity in routes)
+                {
+                    if(activity.PerceivedWindAffect(day.GetWind()) < bestRoute.PerceivedWindAffect(day.GetWind()))
+                    {
+                        bestRoute = activity;
+                    }
+                }
 
-            //Console.WriteLine("1------------");
-            //foreach (var sector in activity1.GetSectors())
-            //{
-            //    Console.WriteLine("------------");
-            //    Console.WriteLine("User Bearing: " + sector.GetBearing());
-            //    Console.WriteLine("Apparent Wind: " + sector.BearingCompare(trueWindBearing).ToString());
-            //    Console.WriteLine("Wind Perception: " + sector.PerceivedHeadwindAngle(trueWindBearing));
-            //    Console.WriteLine("Effort: " + sector.PerceivedEffort(trueWindBearing));
-            //}
+                Console.WriteLine("On " + day.GetDate().Date.ToShortDateString() + " you should ride to " + bestRoute.GetName());
+            }
+
 
         }
 
@@ -323,7 +325,6 @@ namespace Sandbox.CSharp
     {
         DateTime _date;
         Double _windBearing;
-        // testing weird git seetings
 
         public Day(DateTime date, Double wind)
         {
