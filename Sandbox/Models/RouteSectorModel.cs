@@ -40,18 +40,26 @@ namespace Sandbox.Models
             return this._bearing.ToString();
         }
 
-        private Double myMod(Double x, Double m)
+        private Double ModulusStandard(Double x, Double m)
+        {
+
+            return (x % m);
+        }
+
+        private Double ModulusBespoke(Double x, Double m)
         {
             // normal % function doing something weird with negatives
             return (x % m + m) % m;
         }
 
-        public Double BearingCompare(Double windDirection)
+        public delegate Double ModulusFunction(Double a, Double b);
+
+        public Double BearingCompare(Double windDirection, Delegate modulusFunction)
         {
             // broken into lines as this code keeps being a problem and this aids debugging a little
             var result = this._bearing - windDirection;
             var q = result + 180;
-            var w = myMod(q, 360);
+            var w = ModulusBespoke(q, 360);
             var e = w - 180;
 
             return e;
@@ -59,7 +67,9 @@ namespace Sandbox.Models
 
         public int PerceivedEffort(Double windDirection)
         {
-            var diff = this.BearingCompare(windDirection);
+            var modFunctionToUse = new ModulusFunction(this.ModulusBespoke);
+
+            var diff = this.BearingCompare(windDirection, modFunctionToUse);
             diff = Math.Abs(diff);
 
             var result = 0;
@@ -90,7 +100,9 @@ namespace Sandbox.Models
 
         public String PerceivedHeadwindAngle(Double windDirection)
         {
-            var diff = this.BearingCompare(windDirection);
+            var modFunctionToUse = new ModulusFunction(this.ModulusBespoke);
+
+            var diff = this.BearingCompare(windDirection, modFunctionToUse);
             bool positive = diff > 0;
             diff = Math.Abs(diff);
             var result = "";
